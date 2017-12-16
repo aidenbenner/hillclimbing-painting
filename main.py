@@ -9,8 +9,8 @@ from skimage.draw import (line, polygon, circle,
                           bezier_curve, set_color)
 from skimage.transform import rescale, resize, downscale_local_mean
 
-i = io.imread("monalisa.jpg")
-original = resize(i, (int(i.shape[0] / 8), int(i.shape[1] / 8)))
+i = io.imread("tree.jpg")
+original = resize(i, (int(i.shape[0]), int(i.shape[1])))
 
 current = original.copy()
 rr, cc = ellipse(0, 0, 4000, 4000, current.shape)
@@ -41,7 +41,7 @@ class circle:
     def mutate(self):
         a = self.getTuple() 
         b = getRandomCircle(XMAX, YMAX).getTuple()
-        i = random.randint(0, len(a) - 1)
+        i = np.random.randint(0, len(a) - 1)
         a[i] = round((a[i] + b[i]) / 2)
         self.setFromTuple(a)
 
@@ -157,16 +157,16 @@ def cfitness(circ, im1, im2):
 # print(sqdiff(original, original))
 
 def getRandomColor(): 
-    return (random.randint(0,255), random.randint(0,255), random.randint(0,255))
+    return (np.random.randint(0,255), np.random.randint(0,255), np.random.randint(0,255))
 
 
-def getRandomCircle(xmax, ymax): 
-    x = random.randint(0,xmax)
-    y = random.randint(0,ymax)
-    ra = random.randint(0, int(20))
-    rb = random.randint(0, int(20))
-    # ra = random.randint(0, int(xmax / 2.0))
-    # rb = random.randint(0, int(ymax / 2.0))
+def getRandomCircle(xmax, ymax, xrmax = 20, yrmax = 20): 
+    x = np.random.randint(0,xmax)
+    y = np.random.randint(0,ymax)
+    ra = np.random.randint(20, int(yrmax))
+    rb = np.random.randint(20, int(xrmax))
+    # ra = numpy.randint(0, int(xmax / 2.0))
+    # rb = numpy.randint(0, int(ymax / 2.0))
     c = getRandomColor()
     return circle(x,y, ra,rb,c)
 
@@ -223,16 +223,15 @@ def hcpop(pop, current, target):
     return best[0]
 
 currIm = current.copy()
-numCircles = 1000  
-
-
+numCircles = 2000  
 for y in range(numCircles):
-    population = [getRandomCircle(XMAX, YMAX) for x in range(100)]
+    population = [getRandomCircle(XMAX, YMAX, max(XMAX, 21), max(YMAX, 21)) for x in range(300)]
     # for x in range(epochs):
         # print("generation ", x)
         # population = evolvePop(population, currentPix, originalPix)
     best = hcpop(population, currIm, original)
     drawCircle(currIm, best)
+    io.imsave("output/c" + str(y) + ".png", currIm)
     print("circle ", y)
 
 io.imshow(currIm)
