@@ -9,15 +9,25 @@ from skimage.draw import (line, polygon, circle,
                           bezier_curve, set_color)
 from skimage.transform import rescale, resize, downscale_local_mean
 
-i = io.imread("tree.jpg")
-original = resize(i, (int(i.shape[0]), int(i.shape[1])))
+input_image = io.imread("starrynight.jpg")
+
+SCALE_FACTOR = 4 
+original = resize(input_image, (int(input_image.shape[0] / SCALE_FACTOR), int(input_image.shape[1] / SCALE_FACTOR)))
+output_image = resize(input_image, (int(input_image.shape[0] / 1.0), int(input_image.shape[1] / 1.0)))
 
 current = original.copy()
 rr, cc = ellipse(0, 0, 4000, 4000, current.shape)
 set_color(current, (rr, cc), (0,0,0))
 
+rr, cc = ellipse(0, 0, 4000, 4000, output_image.shape)
+set_color(output_image, (rr, cc), (0,0,0))
+
+io.imshow(output_image)
 plt.show()
-# fig.show()
+
+# rr, cc = ellipse(20 * SCALE_FACTOR, 20 * SCALE_FACTOR, 200 * SCALE_FACTOR, 200 * SCALE_FACTOR, output_image.shape)
+# set_color(output_image, (rr, cc), (0,0,0))
+
 
 XMAX = int(original.shape[0])
 YMAX = int(original.shape[1])
@@ -28,6 +38,9 @@ def mse(imageA, imageB):
     return -err
 
 class circle:
+    def clone(self):
+        return circle(self.x, self.y, self.ra, self.rb, self.col)
+
     def __init__(self, x, y, ra, rb, col):
         self.x = x
         self.y = y
@@ -36,28 +49,35 @@ class circle:
         self.col = col 
 
     def circFromTup(self, t):
-        return circle(t[0], t[1], t[2], t[3], (t[4], t[5], t[6]))
+        return circle(t[0], t[1], t[2], t[3], (t[4], t[5], t[6], t[7]))
 
     def mutate(self):
+        maxes = [XMAX, YMAX, XMAX, YMAX, 255, 255, 255, 255]
         a = self.getTuple() 
-        b = getRandomCircle(XMAX, YMAX).getTuple()
-        i = np.random.randint(0, len(a) - 1)
-        a[i] = round((a[i] + b[i]) / 2)
+        ind = np.random.randint(0, len(a))
+        # a[ind] = np.random.normal(a[ind], 20, 1)[0]
+        a[ind] = np.random.normal(a[ind], 30, 1)[0]
+        a[ind] = max(a[ind], 0)
+        a[ind] = min(a[ind], maxes[ind])
         self.setFromTuple(a)
+
+
+
+
 
     def getChild(self, female):
         # position[a] colors[b] 
         return circle(self.x, self.y, self.ra, self.rb, female.col)
 
     def getTuple(self):
-        return [self.x, self.y, self.ra, self.rb, self.col[0], self.col[1], self.col[2]]
+        return [self.x, self.y, self.ra, self.rb, self.col[0], self.col[1], self.col[2], self.col[3]]
 
     def setFromTuple(self, t):
         self.x = t[0]
         self.y = t[1]
         self.ra = t[2]
         self.rb = t[3]
-        self.col = (t[4], t[5], t[6])
+        self.col = (t[4], t[5], t[6], t[7])
 
     def hillclimb(self, curr, target): 
         maxes = [XMAX, YMAX, XMAX, YMAX, 255, 255, 255]
@@ -96,12 +116,47 @@ class circle:
             else:
                 self.setFromTuple(top)
 
+    def hc2(self, curr, target):
+        maxes = [XMAX, YMAX, XMAX, YMAX, 255, 255, 255, 255]
+        currFit = cfitness(self, curr, target)
 
-def drawCircle(img, circle):
+        newFit = currFit
+        while newFit > currFit: 
+            newFit = currFit
+            a = self.getTuple()
+            maxState = a
+            for x in range(a):
+                tmp = list(a)
+                tmp[x] += 2 
+                tmp[x] = min(maxes[x], tmp[x])
+                f = cfitness(tmp, curr, target)
+                if f > newFit:
+                    newFit = f 
+                    maxState = tmp
+
+            for x in range(a):
+                tmp = list(a)
+                tmp[x] -= 2 
+                tmp[x] = max(0, tmp[x])
+                f = cfitness(tmp, curr, target)
+                if f > newFit:
+                    newFit = f
+                    maxState = tmp
+            currFit = newFit
+
+            self.setFromTuple(maxState)
+
+
+
+
+
+
+
+def drawCircle(img, circle, scale = 1):
     # fill ellipse
     col = (circle.col[0] / 256.0, circle.col[1] / 256.0 , circle.col[2] / 256.0)
-    rr, cc = ellipse(circle.x, circle.y, circle.rb, circle.rb, current.shape)
-    set_color(img, (rr, cc), col)
+    rr, cc = ellipse(circle.x * scale, circle.y * scale, circle.ra * scale, circle.rb * scale, img.shape)
+    set_color(img, (rr, cc), col, alpha=circle.col[3] / 256.0)
 
 
 def cordInCirc(circ, x, y):
@@ -157,14 +212,14 @@ def cfitness(circ, im1, im2):
 # print(sqdiff(original, original))
 
 def getRandomColor(): 
-    return (np.random.randint(0,255), np.random.randint(0,255), np.random.randint(0,255))
+    return (np.random.randint(0,255), np.random.randint(0,255), np.random.randint(0,255), np.random.randint(0,255))
 
 
-def getRandomCircle(xmax, ymax, xrmax = 20, yrmax = 20): 
+def getRandomCircle(xmax, ymax, xrmax = 200, yrmax = 200): 
     x = np.random.randint(0,xmax)
     y = np.random.randint(0,ymax)
-    ra = np.random.randint(20, int(yrmax))
-    rb = np.random.randint(20, int(xrmax))
+    ra = np.random.randint(0, int(yrmax))
+    rb = np.random.randint(0, int(xrmax))
     # ra = numpy.randint(0, int(xmax / 2.0))
     # rb = numpy.randint(0, int(ymax / 2.0))
     c = getRandomColor()
@@ -180,12 +235,12 @@ def getBest(population, current, target):
     fitness = sorted(fitness, key = lambda x: x[1])
     return fitness[0]
 
-def evolvePop(population, current, target, clen=8, plen=8, pmutate=0.31, prandom=0.1): 
+def evolvePop(population, current, target, clen=20, plen=5, pmutate=1, prandom=0): 
     fitness = [ (x, evaluate(x, current, target)) for x in population]
     fitness = sorted(fitness, key = lambda x: x[1])
-    # lower is better
-    parents = [fitness[x][0] for x in range(plen)]
-    print("fitness ", fitness[0][1])
+    # higher is better
+    parents = [fitness[-plen:][x][0] for x in range(plen)]
+    # print("fitness ", fitness[-1][1])
 
 #    tmp = current.copy()
 #    drawCircle(tmp, fitness[0][0])
@@ -196,11 +251,14 @@ def evolvePop(population, current, target, clen=8, plen=8, pmutate=0.31, prandom
         if prandom > random.random():
             parents.append(getRandomCircle(XMAX, YMAX))
 
-    for x in parents:
-        if prandom > random.random():
-            x.mutate()
-
     children = []
+    while len(children) < clen:
+        for x in parents:
+            tmp = x.clone() 
+            if pmutate > random.random():
+                tmp.mutate()
+                children.append(tmp)
+
     while len(children) < clen:
         male = random.randint(0,len(parents) - 1)
         female = random.randint(0,len(parents) - 1)
@@ -218,26 +276,30 @@ def hcpop(pop, current, target):
     fitness = sorted(fitness, key = lambda x: x[1])
     best = fitness[-1]
     print(best)
-    best[0].hillclimb(current, target)
+    best[0].hc2(current, target)
     print(best[1])
     return best[0]
 
 currIm = current.copy()
-numCircles = 2000  
+numCircles = 1000  
+epochs = 40 
 for y in range(numCircles):
-    population = [getRandomCircle(XMAX, YMAX, max(XMAX, 21), max(YMAX, 21)) for x in range(300)]
+    population = [getRandomCircle(XMAX, YMAX, max(XMAX, 21), max(YMAX, 21)) for x in range(50)]
     # for x in range(epochs):
         # print("generation ", x)
-        # population = evolvePop(population, currentPix, originalPix)
+     #   population = evolvePop(population, currIm, original)
+
     best = hcpop(population, currIm, original)
     drawCircle(currIm, best)
-    io.imsave("output/c" + str(y) + ".png", currIm)
+    drawCircle(output_image, best, SCALE_FACTOR)
+    io.imsave("output/c" + str(y) + ".png", output_image)
+    io.imsave("output/o" + str(y) + ".png", currIm)
     print("circle ", y)
 
-io.imshow(currIm)
+io.imshow(output_image)
 plt.show()
 
-io.imsave("output.png", currIm)
+io.imsave("output.png", output_image)
 
 
 
