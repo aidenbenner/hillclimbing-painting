@@ -300,7 +300,3 @@ io.imshow(output_image)
 plt.show()
 
 io.imsave("output.png", output_image)
-
-
-
-
