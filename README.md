@@ -6,7 +6,6 @@ I used a mixture of genetic algo and hill climbing heuristics to generate images
 
 Here are a few examples: 
 
-Mona Lisa
 <img src="https://i.imgur.com/a0k7ReD.png" alt="drawing" width="300px"/>
 <img src="https://i.imgur.com/du9yAfX.jpg" alt="drawing" width="300px"/>
 </br>
