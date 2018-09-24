@@ -1,9 +1,9 @@
 
 # Hill Climbing Painting / Genetic Algorithm
-A neat heuristic that draws source images using as few basic shapes as possible. Works by r
-I used a mixture of genetic algo and hill climbing heuristics to generate images.
+An art generation technique that draws source images using as few basic shapes as possible. 
+I used a mixture of genetic algorithms and hill climbing heuristics to generate images.
 
-
+ 
 Here are a few examples: 
 
 <img src="https://i.imgur.com/a0k7ReD.png" alt="drawing" width="300px"/>
